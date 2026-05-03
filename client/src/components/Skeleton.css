@@ -1,0 +1,59 @@
+.skeleton-block {
+    background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.5s infinite;
+    border-radius: 8px;
+}
+
+.skeleton-circle {
+    border-radius: 50%;
+}
+
+.skeleton-card {
+    padding: 24px;
+    border-radius: 16px;
+    background: var(--glass);
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.skeleton-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.skeleton-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.skeleton-dashboard {
+    padding: 100px 40px 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.skeleton-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+@keyframes skeletonShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-block {
+        animation: none;
+        background: rgba(255,255,255,0.05);
+    }
+}
+

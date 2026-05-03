@@ -1,0 +1,251 @@
+.saline-monitor-container {
+    padding: 30px;
+    min-height: 100vh;
+    background: var(--bg-dark);
+    color: var(--text-main);
+}
+
+.monitor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.patient-context {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.back-btn {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--text-main);
+    transition: all 0.3s;
+}
+
+.back-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.status-badge {
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--glass);
+    border: 1px solid var(--border);
+}
+
+.status-online { color: #00ff88; border-color: #00ff8844; }
+.status-offline { color: #ffa500; border-color: #ffa50044; }
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.monitor-main {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 30px;
+}
+
+.visualization-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    position: relative;
+}
+
+/* Bottle Styling */
+.bottle-wrapper {
+    position: relative;
+    width: 200px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bottle-cap {
+    width: 60px;
+    height: 20px;
+    background: #666;
+    border-radius: 4px;
+}
+
+.bottle-neck {
+    width: 40px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-bottom: none;
+}
+
+.bottle-body {
+    width: 180px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px 20px 60px 60px;
+    position: relative;
+    overflow: hidden;
+}
+
+.liquid-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    transition: height 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 1s;
+}
+
+.liquid-bubble {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    animation: rise 3s infinite ease-in;
+}
+
+.b1 { width: 10px; height: 10px; left: 20%; bottom: 0; animation-delay: 0s; }
+.b2 { width: 6px; height: 6px; left: 60%; bottom: 0; animation-delay: 1.5s; }
+
+@keyframes rise {
+    0% { transform: translateY(0) scale(1); opacity: 0; }
+    20% { opacity: 0.5; }
+    100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
+}
+
+.liquid-wave {
+    position: absolute;
+    top: -10px;
+    left: 0;
+    width: 200%;
+    height: 20px;
+    background: inherit;
+    border-radius: 40%;
+    animation: wave 4s infinite linear;
+}
+
+@keyframes wave {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+.bottle-gloss {
+    position: absolute;
+    top: 0;
+    left: 10%;
+    width: 20%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.1), transparent);
+    border-radius: 20px;
+}
+
+.percentage-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    font-weight: 800;
+    color: white;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+.vital-stats {
+    margin-top: 50px;
+    display: flex;
+    gap: 20px;
+}
+
+.stat-card {
+    background: var(--surface-bright);
+    padding: 20px 30px;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.stat-card label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+}
+
+.stat-card strong {
+    font-size: 1.5rem;
+    color: var(--primary);
+}
+
+/* Sidebar Styling */
+.info-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.alert-card h3, .history-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+.warning-alert {
+    background: rgba(255, 165, 0, 0.1);
+    color: #ffa500;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.empty-hint {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+@media (max-width: 1000px) {
+    .monitor-main {
+        grid-template-columns: 1fr;
+    }
+}
