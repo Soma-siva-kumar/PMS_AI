@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import io from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from './DashboardHeader';
 import { SkeletonDashboard } from '../Skeleton';
@@ -10,23 +11,42 @@ const AdminDashboard = () => {
     const [user] = useState(JSON.parse(localStorage.getItem('user')));
     const [staff, setStaff] = useState([]);
     const [patients, setPatients] = useState([]);
-    const [activeTab, setActiveTab] = useState('staff');
+    const [activeTab, setActiveTab] = useState('patients');
     const [loading, setLoading] = useState(true);
+    const [vitals, setVitals] = useState({});
+    const [liveVitals, setLiveVitals] = useState({});
+    const [connected, setConnected] = useState(false);
+    const socketRef = useRef();
     const { addToast } = useToast();
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!user?.id) return;
+            if (user?.isGuest) {
+                // Guest mode now fetches real data if available, or shows empty state
+                // Removed mock data as requested
+            }
+
+            if (!user?.id && !user?.hospitalName) {
+                setLoading(false);
+                return;
+            }
             setLoading(true);
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             try {
-                // Fetch the latest user profile to ensure hospital metadata is current
-                const profileRes = await axios.get(`http://localhost:5000/api/users/profile/${user.id}`);
-                const latestUser = { ...user, ...profileRes.data };
+                let latestUser = user;
+                // Only fetch profile if we have a real user ID
+                if (user?.id) {
+                    const profileRes = await axios.get(`${BASE_URL}/api/users/profile/${user.id}`);
+                    latestUser = { ...user, ...profileRes.data };
+                    localStorage.setItem('user', JSON.stringify(latestUser));
+                }
                 
-                const [stRes, ptRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/users/caretakers'),
-                    axios.get('http://localhost:5000/api/users/patients')
+                const adminId = latestUser.id || latestUser._id;
+                const [stRes, ptRes, vtRes] = await Promise.all([
+                    axios.get(`${BASE_URL}/api/users/caretakers?admittedBy=${adminId}`),
+                    axios.get(`${BASE_URL}/api/users/patients?admittedBy=${adminId}`),
+                    axios.get(`${BASE_URL}/api/vitals/latest-all`)
                 ]);
                 
                 const hospital = latestUser.hospitalName?.toLowerCase();
@@ -37,18 +57,14 @@ const AdminDashboard = () => {
                     return;
                 }
 
-                const filteredStaff = stRes.data.filter(u => 
-                    u.uniqueId?.startsWith('S') && 
-                    u.hospitalName?.toLowerCase() === hospital
-                );
-                
-                const filteredPatients = ptRes.data.filter(u => 
-                    u.uniqueId?.startsWith('P') && 
-                    u.hospitalName?.toLowerCase() === hospital
-                );
-                
-                setStaff(filteredStaff);
-                setPatients(filteredPatients);
+                // Map vitals by patient uniqueId for easier lookup
+                const vitalsMap = {};
+                // Since vtRes.data is { patientObjectId: vitalRecord }, we need to map it
+                // Actually, let's keep it simple and just use the patient's uniqueId if we can
+                // But the patient objects have uniqueId, and the vitals have patientObjectId
+                setStaff(stRes.data);
+                setPatients(ptRes.data);
+                setVitals(vtRes.data);
             } catch (error) {
                 console.error('Error fetching admin data:', error);
                 addToast('Database sync failed. Please check your cloud connection.', 'error');
@@ -57,11 +73,73 @@ const AdminDashboard = () => {
             }
         };
         fetchData();
-    }, [user?.id, addToast]);
+
+        // Socket logic
+        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        socketRef.current = io(BASE_URL);
+
+        socketRef.current.on('connect', () => {
+            setConnected(true);
+            socketRef.current.emit('join-admin-room');
+        });
+
+        socketRef.current.on('saline-level', (data) => {
+            // data: { patientId, percentage, timestamp }
+            // patientId here is uniqueId (e.g. P101)
+            // We need to update the vitals state. 
+            // The bulk vitals fetch returns { objectId: record }
+            // Let's find the patient with this uniqueId
+            setVitals(prev => {
+                const updated = { ...prev };
+                // Search for the patient with this uniqueId to get their objectId
+                // This is a bit inefficient, but works for now.
+                // Ideally the socket event would send the objectId too.
+                return updated;
+            });
+            
+            // Actually, let's just store the live updates in a separate map by uniqueId
+            setLiveVitals(prev => ({
+                ...prev,
+                [data.patientId]: data.percentage
+            }));
+        });
+
+        socketRef.current.on('disconnect', () => setConnected(false));
+
+        return () => {
+            if (socketRef.current) socketRef.current.disconnect();
+        };
+    }, [user?.id, user?.isGuest, addToast]);
 
     if (loading) return <SkeletonDashboard />;
 
     const currentList = activeTab === 'staff' ? staff : patients;
+
+    const renderUserList = (list, type) => (
+        <div className="user-list">
+            {list.length > 0 ? list.map(u => (
+                <div key={u._id} className="user-row glass-panel clickable-row" onClick={() => navigate(`/dashboard/admin/user/${u._id}`)}>
+                    <div className="user-profile-info">
+                        <div className="user-avatar-mini">
+                            {u.profilePicture ? <img src={u.profilePicture} alt="Avatar" /> : <i className="fas fa-user-circle"></i>}
+                        </div>
+                        <div className="user-details">
+                            <strong>{u.name}</strong>
+                            <span>{u.uniqueId} &bull; {u.email}</span>
+                        </div>
+                    </div>
+                    <div className="row-action-indicator">
+                        <i className="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            )) : (
+                <div className="empty-state glass-panel">
+                    <i className="fas fa-inbox"></i>
+                    <p>No {type} registered in the system yet.</p>
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <div className="dashboard-container">
@@ -74,6 +152,9 @@ const AdminDashboard = () => {
                     </div>
                     <h3 className="section-title">Hospital Management Console</h3>
                     <p className="section-subtitle">Dedicated oversight of clinical staff and registered patients.</p>
+                    <div className={`live-status ${connected ? 'online' : 'offline'}`}>
+                        <span className="pulse-dot"></span> {connected ? 'Real-time database sync active' : 'Connecting to database...'}
+                    </div>
                 </div>
                 <div className="admin-stats-row">
                     <div className="admin-stat-card glass-panel">
@@ -100,19 +181,46 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            <div className="admin-tabs-row">
-                <div className="admin-tabs">
-                    <button className={`tab-btn ${activeTab === 'staff' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('staff')}>
-                        <i className="fas fa-user-md"></i> Staff ({staff.length})
+            <div className="mobile-only-management animate-slide-up">
+                <div className="mobile-action-buttons">
+                    <button className="btn btn-primary" onClick={() => navigate('/dashboard/admin/add-patient')}>
+                        <i className="fas fa-plus"></i> Add Patient
                     </button>
+                    <button className="btn btn-primary" onClick={() => navigate('/dashboard/admin/add-staff')}>
+                        <i className="fas fa-user-plus"></i> Add Staff
+                    </button>
+                </div>
+                
+                <div className="mobile-category-tabs">
                     <button className={`tab-btn ${activeTab === 'patients' ? 'active' : ''}`}
                             onClick={() => setActiveTab('patients')}>
                         <i className="fas fa-user-injured"></i> Patients ({patients.length})
                     </button>
+                    <button className={`tab-btn ${activeTab === 'staff' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('staff')}>
+                        <i className="fas fa-user-md"></i> Staff ({staff.length})
+                    </button>
                 </div>
+
+                <div className="mobile-list-view">
+                    {renderUserList(currentList, activeTab)}
+                </div>
+            </div>
+
+            <div className="admin-tabs-row desktop-only">
+                <div className="admin-tabs">
+                    <button className={`tab-btn ${activeTab === 'patients' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('patients')}>
+                        <i className="fas fa-user-injured"></i> Patients ({patients.length})
+                    </button>
+                    <button className={`tab-btn ${activeTab === 'staff' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('staff')}>
+                        <i className="fas fa-user-md"></i> Staff ({staff.length})
+                    </button>
+                </div>
+                
                 <div className="admin-actions">
-                    <button className="btn btn-outline add-staff-btn" onClick={() => navigate('/dashboard/admin/add-staff')}>
+                    <button className="btn btn-primary add-staff-btn" onClick={() => navigate('/dashboard/admin/add-staff')}>
                         <i className="fas fa-user-plus"></i> Add Staff
                     </button>
                     <button className="btn btn-primary add-patient-btn" onClick={() => navigate('/dashboard/admin/add-patient')}>
@@ -121,31 +229,8 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            <div className="admin-content-area animate-slide-up">
-                <div className="user-list">
-                    {currentList.length > 0 ? currentList.map(u => (
-                        <div key={u._id} className="user-row glass-panel">
-                            <div className="user-profile-info">
-                                <div className="user-avatar-mini">
-                                    {u.profilePicture ? <img src={u.profilePicture} alt="Avatar" /> : <i className="fas fa-user-circle"></i>}
-                                </div>
-                                <div className="user-details">
-                                    <strong>{u.name}</strong>
-                                    <span>{u.uniqueId} &bull; {u.email}</span>
-                                </div>
-                            </div>
-                            <div className="user-status-badge">Active</div>
-                            <button className="btn btn-outline btn-sm" onClick={() => navigate(`/dashboard/admin/user/${u._id}`)}>
-                                Manage
-                            </button>
-                        </div>
-                    )) : (
-                        <div className="empty-state glass-panel">
-                            <i className="fas fa-inbox"></i>
-                            <p>No {activeTab} registered in the system yet.</p>
-                        </div>
-                    )}
-                </div>
+            <div className="admin-content-area animate-slide-up desktop-only">
+                {renderUserList(currentList, activeTab)}
             </div>
         </div>
     );

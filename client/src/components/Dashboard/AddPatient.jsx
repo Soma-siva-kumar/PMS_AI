@@ -10,7 +10,6 @@ const AddPatient = () => {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
-    const [roomNumbers, setRoomNumbers] = useState({});
     const navigate = useNavigate();
     const { addToast } = useToast();
     const user = JSON.parse(localStorage.getItem('user'));
@@ -20,8 +19,9 @@ const AddPatient = () => {
         setLoading(true);
         setSearched(true);
         try {
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             // Fetch all patients from the system
-            const res = await axios.get('http://localhost:5000/api/users/patients');
+            const res = await axios.get(`${BASE_URL}/api/users/patients`);
             
             // Filter by 'P' prefix and search query
             let filtered = res.data.filter(u => u.uniqueId?.startsWith('P'));
@@ -47,17 +47,13 @@ const AddPatient = () => {
     }, []);
 
     const handleAddToHospital = async (patientId) => {
-        const room = roomNumbers[patientId];
-        if (!room) {
-            addToast('Please assign a room number first', 'warning');
-            return;
-        }
-
         try {
-            await axios.put(`http://localhost:5000/api/users/profile/${patientId}`, {
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            await axios.put(`${BASE_URL}/api/users/profile/${patientId}`, {
                 hospitalName: user.hospitalName,
+                hospitalLocation: user.hospitalLocation,
                 admissionDate: new Date(),
-                roomNumber: room
+                admittedBy: user.id || user._id
             });
             addToast('Patient successfully admitted to your hospital!', 'success');
             handleSearch();
@@ -108,7 +104,7 @@ const AddPatient = () => {
                                     <div className="user-details">
                                         <strong>{u.name}</strong>
                                         <span>{u.uniqueId} &bull; Registered Patient</span>
-                                        {isAlreadyMember && <span className="status-badge-inline">Room: {u.roomNumber || 'N/A'}</span>}
+                                        {isAlreadyMember && <span className="status-badge-inline">Admitted to: {u.hospitalName} {u.roomNumber ? `(Room: ${u.roomNumber})` : ''}</span>}
                                     </div>
                                 </div>
 
@@ -119,15 +115,8 @@ const AddPatient = () => {
                                         </button>
                                     ) : (
                                         <div className="admission-form-mini">
-                                            <input 
-                                                type="text" 
-                                                placeholder="Room No." 
-                                                className="room-input-mini"
-                                                value={roomNumbers[u._id] || ''}
-                                                onChange={(e) => setRoomNumbers({...roomNumbers, [u._id]: e.target.value})}
-                                            />
                                             <button className="btn btn-primary btn-sm" onClick={() => handleAddToHospital(u._id)}>
-                                                <i className="fas fa-plus"></i> Admit
+                                                <i className="fas fa-plus"></i> Admit to Hospital
                                             </button>
                                         </div>
                                     )}
@@ -141,7 +130,7 @@ const AddPatient = () => {
                         <p>No patients found matching your search criteria.</p>
                         <div className="empty-actions">
                             <p className="hint-text">If the patient is not registered in the system yet:</p>
-                            <button className="btn btn-primary" onClick={() => navigate('/register')}>
+                            <button className="btn btn-primary" onClick={() => navigate('/register', { state: { hospitalName: user?.hospitalName } })}>
                                 <i className="fas fa-plus"></i> Register New Patient
                             </button>
                         </div>

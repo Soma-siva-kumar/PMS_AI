@@ -16,11 +16,12 @@ const SalineMonitor = () => {
     const socketRef = useRef();
 
     useEffect(() => {
+        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         // Fetch patient details
         const fetchPatient = async () => {
             try {
                 // Search for patient by uniqueId
-                const res = await axios.get('http://localhost:5000/api/users/patients');
+                const res = await axios.get(`${BASE_URL}/api/users/patients`);
                 const found = res.data.find(p => p.uniqueId === id);
                 if (found) setPatient(found);
                 else addToast('Patient record not found', 'error');
@@ -31,7 +32,7 @@ const SalineMonitor = () => {
         fetchPatient();
 
         // Connect to Socket.io
-        socketRef.current = io('http://localhost:5000');
+        socketRef.current = io(BASE_URL);
 
         socketRef.current.on('connect', () => {
             setConnected(true);

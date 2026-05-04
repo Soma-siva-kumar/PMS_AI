@@ -23,11 +23,21 @@ const PatientDashboard = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            if (user?.isGuest) {
+                // Mock connections for Guest Patient
+                setCaretakers([
+                    { _id: 'ct1', name: 'Dr. Sarah Connor', uniqueId: 'S101', role: 'Staff' }
+                ]);
+                setLoading(false);
+                return;
+            }
+
             if (!user?.id) { setLoading(false); return; }
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             try {
                 const [caretakerRes, vitalRes] = await Promise.all([
-                    axios.get(`http://localhost:5000/api/users/connections/${user.id}`),
-                    axios.get(`http://localhost:5000/api/vitals/${user.id}/latest`)
+                    axios.get(`${BASE_URL}/api/users/connections/${user.id}`),
+                    axios.get(`${BASE_URL}/api/vitals/${user.id}/latest`)
                 ]);
                 setCaretakers(caretakerRes.data);
                 if (vitalRes.data && vitalRes.data.heartRate) {
@@ -41,13 +51,13 @@ const PatientDashboard = () => {
             }
         };
         fetchData();
-    }, [user?.id, addToast]);
+    }, [user?.id, user?.isGuest, addToast]);
 
     const simulateVitals = async () => {
         const bpSystolic = Math.floor(Math.random() * (130 - 110 + 1) + 110);
         const bpDiastolic = Math.floor(Math.random() * (85 - 75 + 1) + 75);
         const newData = {
-            patient: user.id,
+            patient: user?.id || 'guest',
             heartRate: Math.floor(Math.random() * (90 - 65 + 1) + 65),
             bloodPressure: `${bpSystolic}/${bpDiastolic}`,
             temperature: (97 + Math.random() * 3).toFixed(1),
@@ -56,8 +66,15 @@ const PatientDashboard = () => {
             salineLevel: Math.max(0, vitals.salineLevel - 1)
         };
 
+        if (user?.isGuest) {
+            setVitals(newData);
+            addToast('Guest Mode: Vitals updated locally', 'success');
+            return;
+        }
+
+        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         try {
-            const res = await axios.post('http://localhost:5000/api/vitals/update', newData);
+            const res = await axios.post(`${BASE_URL}/api/vitals/update`, newData);
             setVitals(res.data);
             addToast('Vitals updated via AI monitoring', 'success');
         } catch (error) {

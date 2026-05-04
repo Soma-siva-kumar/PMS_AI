@@ -7,7 +7,7 @@ const generateUniqueId = async (role) => {
     const prefixes = {
         'Patient': 'P',
         'Caretaker': 'C',
-        'Family member': 'F',
+        'Family Member': 'F',
         'Staff': 'S',
         'Admin': 'A'
     };
@@ -32,6 +32,11 @@ router.post('/register', async (req, res) => {
         const userExists = await User.findOne({ email });
         if (userExists) return res.status(400).json({ message: 'User already exists' });
 
+        // Data allocation validation for Admins
+        if (role === 'Admin' && (!hospitalName || !hospitalLocation)) {
+            return res.status(400).json({ message: 'Hospital Name and Location are required for Admin accounts' });
+        }
+
         const uniqueId = await generateUniqueId(role);
         const user = new User({ 
             name, 
@@ -39,8 +44,8 @@ router.post('/register', async (req, res) => {
             password, 
             role, 
             uniqueId,
-            hospitalName,
-            hospitalLocation
+            hospitalName: hospitalName || '',
+            hospitalLocation: hospitalLocation || ''
         });
         await user.save();
 

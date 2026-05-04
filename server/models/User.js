@@ -54,6 +54,11 @@ const userSchema = new mongoose.Schema({
     roomNumber: {
         type: String,
         default: ''
+    },
+    admittedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     }
 }, {
     timestamps: true

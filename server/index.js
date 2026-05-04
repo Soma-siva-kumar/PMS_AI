@@ -9,7 +9,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173", // Vite default port
+        origin: "*", // Allow all for initial deployment simplicity
         methods: ["GET", "POST"]
     }
 });
@@ -35,13 +35,22 @@ io.on('connection', (socket) => {
     // AI Engine connects and joins a room for a specific patient
     socket.on('join-patient-room', (patientId) => {
         socket.join(patientId);
-        console.log(`Socket ${socket.id} joined room: ${patientId}`);
+        console.log(`Socket ${socket.id} joined patient room: ${patientId}`);
+    });
+
+    // Admin joins a global admin room to monitor all patients
+    socket.on('join-admin-room', () => {
+        socket.join('admin-room');
+        console.log(`Socket ${socket.id} joined admin room`);
     });
 
     // Receive data from AI Engine and broadcast to clients in the room
     socket.on('saline-update', (data) => {
         // data: { patientId, percentage, timestamp }
+        // Broadcast to specific patient room
         io.to(data.patientId).emit('saline-level', data);
+        // Also broadcast to admin room
+        io.to('admin-room').emit('saline-level', data);
     });
 
     socket.on('disconnect', () => {

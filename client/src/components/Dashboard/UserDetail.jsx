@@ -12,12 +12,16 @@ const UserDetail = () => {
     const [targetUser, setTargetUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showMonitoring, setShowMonitoring] = useState(false);
+    const [isEditingRoom, setIsEditingRoom] = useState(false);
+    const [roomInput, setRoomInput] = useState('');
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/users/profile/${id}`);
+                const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const res = await axios.get(`${BASE_URL}/api/users/profile/${id}`);
                 setTargetUser(res.data);
+                setRoomInput(res.data.roomNumber || '');
             } catch (err) {
                 addToast('Failed to load user details', 'error');
                 navigate('/dashboard/admin');
@@ -28,15 +32,31 @@ const UserDetail = () => {
         fetchUser();
     }, [id, addToast, navigate]);
 
+    const handleUpdateRoom = async () => {
+        try {
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            await axios.put(`${BASE_URL}/api/users/profile/${id}`, {
+                roomNumber: roomInput
+            });
+            setTargetUser({ ...targetUser, roomNumber: roomInput });
+            setIsEditingRoom(false);
+            addToast('Room number updated successfully!', 'success');
+        } catch (err) {
+            addToast('Failed to update room number', 'error');
+        }
+    };
+
     const handleRemoveFromHospital = async () => {
         if (!window.confirm(`Are you sure you want to remove ${targetUser.name} from your hospital records?`)) return;
 
         try {
-            await axios.put(`http://localhost:5000/api/users/profile/${id}`, {
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            await axios.put(`${BASE_URL}/api/users/profile/${id}`, {
                 hospitalName: '',
                 hospitalLocation: '',
                 admissionDate: null,
-                roomNumber: ''
+                roomNumber: '',
+                admittedBy: null
             });
             addToast(`${isStaff ? 'Staff' : 'Patient'} successfully removed from hospital`, 'success');
             navigate('/dashboard/admin');
@@ -123,9 +143,30 @@ const UserDetail = () => {
 
                             {!isStaff && (
                                 <div className="form-group profile-group">
-                                    <label className="profile-label"><i className="fas fa-door-open"></i> Assigned Room</label>
+                                    <label className="profile-label">
+                                        <i className="fas fa-door-open"></i> Assigned Room
+                                        {!isEditingRoom && (
+                                            <button className="edit-room-btn" onClick={() => setIsEditingRoom(true)}>
+                                                <i className="fas fa-edit"></i> Edit
+                                            </button>
+                                        )}
+                                    </label>
                                     <div className="profile-value-box">
-                                        <p className="static-value">{targetUser.roomNumber || 'Not assigned'}</p>
+                                        {isEditingRoom ? (
+                                            <div className="room-edit-input-group">
+                                                <input 
+                                                    type="text" 
+                                                    value={roomInput} 
+                                                    onChange={(e) => setRoomInput(e.target.value)}
+                                                    placeholder="Enter room number"
+                                                    autoFocus
+                                                />
+                                                <button className="btn btn-primary btn-xs" onClick={handleUpdateRoom}>Save</button>
+                                                <button className="btn btn-outline btn-xs" onClick={() => { setIsEditingRoom(false); setRoomInput(targetUser.roomNumber || ''); }}>Cancel</button>
+                                            </div>
+                                        ) : (
+                                            <p className="static-value">{targetUser.roomNumber || 'Not assigned'}</p>
+                                        )}
                                     </div>
                                 </div>
                             )}

@@ -19,8 +19,9 @@ const AddStaff = () => {
         setLoading(true);
         setSearched(true);
         try {
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             // Fetch all staff (caretakers) from the system
-            const res = await axios.get('http://localhost:5000/api/users/caretakers');
+            const res = await axios.get(`${BASE_URL}/api/users/caretakers`);
             
             // Filter by clinical ID prefixes (S for Staff, C for Caretaker) and search query
             let filtered = res.data.filter(u => 
@@ -49,14 +50,14 @@ const AddStaff = () => {
 
     const handleAddToHospital = async (staffId) => {
         try {
-            // Mocking the update of hospitalName for the staff
-            // In a real app, this would be a specific API call to link staff to hospital
-            await axios.put(`http://localhost:5000/api/users/profile/${staffId}`, {
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            await axios.put(`${BASE_URL}/api/users/profile/${staffId}`, {
                 hospitalName: user.hospitalName,
-                admissionDate: new Date()
+                hospitalLocation: user.hospitalLocation,
+                admissionDate: new Date(),
+                admittedBy: user.id || user._id
             });
             addToast('Staff successfully added to your hospital!', 'success');
-            // Refresh results to show updated status if needed
             handleSearch();
         } catch (err) {
             addToast('Failed to add staff to hospital', 'error');
@@ -105,7 +106,7 @@ const AddStaff = () => {
                                     <div className="user-details">
                                         <strong>{u.name}</strong>
                                         <span>{u.uniqueId} &bull; Clinical Staff</span>
-                                        {isAlreadyMember && <span className="status-badge-inline">In Your Hospital</span>}
+                                        {isAlreadyMember && <span className="status-badge-inline">Admitted to: {u.hospitalName}</span>}
                                     </div>
                                 </div>
 
@@ -129,7 +130,7 @@ const AddStaff = () => {
                         <p>No staff found matching your search criteria.</p>
                         <div className="empty-actions">
                             <p className="hint-text">If the staff member is not registered in the system yet:</p>
-                            <button className="btn btn-primary" onClick={() => navigate('/register')}>
+                            <button className="btn btn-primary" onClick={() => navigate('/register', { state: { hospitalName: user?.hospitalName } })}>
                                 <i className="fas fa-user-plus"></i> Register New Staff
                             </button>
                         </div>

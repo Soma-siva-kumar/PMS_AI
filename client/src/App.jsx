@@ -34,7 +34,7 @@ const AppContent = () => {
     const location = useLocation();
     const user = JSON.parse(localStorage.getItem('user'));
 
-    const isDashboardRoute = ['/dashboard/patient', '/dashboard/caretaker', '/dashboard/family', '/dashboard/staff', '/dashboard/admin', '/search', '/profile', '/monitor'].some(path => location.pathname.startsWith(path));
+    const isDashboardRoute = ['/dashboard/patient', '/dashboard/caretaker', '/dashboard/family', '/dashboard/staff', '/dashboard/admin', '/search', '/profile'].some(path => location.pathname.startsWith(path)) && !location.pathname.includes('/user/');
 
     return (
         <>

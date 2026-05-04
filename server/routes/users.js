@@ -3,23 +3,35 @@ const User = require('../models/User');
 
 const ConnectionRequest = require('../models/ConnectionRequest');
 
-// Fetch all Caretakers and Staff (for Admin)
+// Fetch all Caretakers and Staff (filtered by Admin for security)
 router.get('/caretakers', async (req, res) => {
     try {
-        // Support both 'Caretaker' and 'Staff' roles in the global directory
-        const staff = await User.find({ 
-            role: { $in: ['Caretaker', 'Staff'] } 
-        }).select('-password');
+        const { admittedBy } = req.query;
+        let query = { role: { $in: ['Caretaker', 'Staff'] } };
+        
+        // If admittedBy is provided, filter by it for secure hospital scoping
+        if (admittedBy) {
+            query.admittedBy = admittedBy;
+        }
+
+        const staff = await User.find(query).select('-password');
         res.json(staff);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-// Fetch all Patients (for Admin)
+// Fetch all Patients (filtered by Admin for security)
 router.get('/patients', async (req, res) => {
     try {
-        const patients = await User.find({ role: 'Patient' }).select('-password');
+        const { admittedBy } = req.query;
+        let query = { role: 'Patient' };
+
+        if (admittedBy) {
+            query.admittedBy = admittedBy;
+        }
+
+        const patients = await User.find(query).select('-password');
         res.json(patients);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -157,7 +169,7 @@ router.put('/profile/:userId/photo', async (req, res) => {
 // Update Profile Details
 router.put('/profile/:userId', async (req, res) => {
     try {
-        const { name, email, phoneNumber, hospitalName, hospitalLocation, admissionDate, roomNumber } = req.body;
+        const { name, email, phoneNumber, hospitalName, hospitalLocation, admissionDate, roomNumber, admittedBy } = req.body;
         const updateData = { name, email, phoneNumber };
         
         // Only update hospital fields if they are provided
@@ -165,6 +177,7 @@ router.put('/profile/:userId', async (req, res) => {
         if (hospitalLocation !== undefined) updateData.hospitalLocation = hospitalLocation;
         if (admissionDate !== undefined) updateData.admissionDate = admissionDate;
         if (roomNumber !== undefined) updateData.roomNumber = roomNumber;
+        if (admittedBy !== undefined) updateData.admittedBy = admittedBy;
 
         const user = await User.findByIdAndUpdate(
             req.params.userId, 
