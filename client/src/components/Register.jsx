@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from './Toast';
+import { BASE_URL } from '../api';
 import './Auth.css';
 
 const Register = () => {
@@ -24,8 +25,8 @@ const Register = () => {
         setLoading(true);
         setMessage('');
         try {
-            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             const res = await axios.post(`${BASE_URL}/api/auth/register`, formData);
+
             const msg = `Registered successfully! Your ID is: ${res.data.uniqueId}`;
             setMessage(msg);
             addToast(msg, 'success');

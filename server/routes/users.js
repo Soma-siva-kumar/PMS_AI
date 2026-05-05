@@ -1,7 +1,31 @@
 const router = require('express').Router();
 const User = require('../models/User');
-
 const ConnectionRequest = require('../models/ConnectionRequest');
+const { upload, uploadVideo } = require('../utils/cloudinary');
+
+// Upload AI Demo Video
+router.post('/upload-ai-video/:userId', uploadVideo.single('video'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No video file uploaded' });
+
+        const user = await User.findByIdAndUpdate(
+            req.params.userId,
+            { 
+                aiSourceUrl: req.file.path,
+                aiSourceType: 'file' 
+            },
+            { new: true }
+        );
+
+        res.json({ 
+            message: 'Video uploaded successfully', 
+            url: req.file.path,
+            user 
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 // Fetch all Caretakers and Staff (filtered by Admin for security)
 router.get('/caretakers', async (req, res) => {
@@ -41,14 +65,17 @@ router.get('/patients', async (req, res) => {
 // Search Users with Connection Status
 router.get('/search', async (req, res) => {
     try {
-        const { query, role, currentUserId } = req.query;
+        const { query, role, excludeRole, currentUserId } = req.query;
         let filter = {
             $or: [
                 { name: { $regex: query, $options: 'i' } },
                 { uniqueId: { $regex: query, $options: 'i' } }
             ]
         };
+        
         if (role) filter.role = role;
+        if (excludeRole) filter.role = { $ne: excludeRole };
+        if (currentUserId) filter._id = { $ne: currentUserId }; // Don't find self
 
         const users = await User.find(filter).select('-password').lean();
         
@@ -96,9 +123,49 @@ router.post('/connect', async (req, res) => {
 
         if (existing) return res.status(400).json({ message: 'Request already exists or connected' });
 
-        const request = new ConnectionRequest({ sender: senderId, recipient: recipientId });
+        const request = new ConnectionRequest({ sender: senderId, recipient: recipientId, acceptedByRecipient: false });
         await request.save();
+
+        // Real-time notification
+        const io = req.app.get('io');
+        io.to(recipientId).emit('new-notification');
+
         res.status(201).json({ message: 'Request sent successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Admin-Initiated Connection (Assign Patient to Staff)
+router.post('/admin-assign', async (req, res) => {
+    try {
+        const { staffId, patientId } = req.body;
+        
+        // Check if already exists
+        const existing = await ConnectionRequest.findOne({
+            $or: [
+                { sender: staffId, recipient: patientId },
+                { sender: patientId, recipient: staffId }
+            ],
+            status: { $in: ['pending', 'accepted'] }
+        });
+        if (existing) return res.status(400).json({ message: 'Request or connection already exists' });
+
+        const request = new ConnectionRequest({
+            sender: staffId,
+            recipient: patientId,
+            initiatedByAdmin: true,
+            acceptedBySender: false,
+            acceptedByRecipient: false
+        });
+        await request.save();
+
+        // Real-time notification to both parties
+        const io = req.app.get('io');
+        io.to(staffId).emit('new-notification');
+        io.to(patientId).emit('new-notification');
+
+        res.status(201).json({ message: 'Assignment request sent to both parties' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -107,9 +174,17 @@ router.post('/connect', async (req, res) => {
 // Get Notifications (Pending Requests)
 router.get('/notifications/:userId', async (req, res) => {
     try {
-        const requests = await ConnectionRequest.find({ recipient: req.params.userId, status: 'pending' })
-            .populate('sender', 'name uniqueId role')
-            .sort({ createdAt: -1 });
+        const userId = req.params.userId;
+        const requests = await ConnectionRequest.find({
+            status: 'pending',
+            $or: [
+                { recipient: userId, acceptedByRecipient: false },
+                { sender: userId, initiatedByAdmin: true, acceptedBySender: false }
+            ]
+        })
+        .populate('sender', 'name uniqueId role')
+        .populate('recipient', 'name uniqueId role')
+        .sort({ createdAt: -1 });
         res.json(requests);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -119,20 +194,41 @@ router.get('/notifications/:userId', async (req, res) => {
 // Respond to Request (Accept/Reject)
 router.post('/respond', async (req, res) => {
     try {
-        const { requestId, status } = req.body;
+        const { requestId, status, userId } = req.body;
         const request = await ConnectionRequest.findById(requestId);
         if (!request) return res.status(404).json({ message: 'Request not found' });
 
-        request.status = status;
-        await request.save();
-
-        if (status === 'accepted') {
-            // Add to both users' connections
-            await User.findByIdAndUpdate(request.sender, { $addToSet: { connections: request.recipient } });
-            await User.findByIdAndUpdate(request.recipient, { $addToSet: { connections: request.sender } });
+        if (status === 'rejected') {
+            request.status = 'rejected';
+            await request.save();
+            return res.json({ message: 'Request rejected' });
         }
 
-        res.json({ message: `Request ${status} successfully` });
+        if (status === 'accepted') {
+            if (request.initiatedByAdmin) {
+                // Determine who is accepting
+                if (request.sender.toString() === userId) {
+                    request.acceptedBySender = true;
+                } else if (request.recipient.toString() === userId) {
+                    request.acceptedByRecipient = true;
+                }
+
+                // If both accepted, finalize
+                if (request.acceptedBySender && request.acceptedByRecipient) {
+                    request.status = 'accepted';
+                    await User.findByIdAndUpdate(request.sender, { $addToSet: { connections: request.recipient } });
+                    await User.findByIdAndUpdate(request.recipient, { $addToSet: { connections: request.sender } });
+                }
+            } else {
+                // Standard user-to-user request
+                request.status = 'accepted';
+                await User.findByIdAndUpdate(request.sender, { $addToSet: { connections: request.recipient } });
+                await User.findByIdAndUpdate(request.recipient, { $addToSet: { connections: request.sender } });
+            }
+            await request.save();
+        }
+
+        res.json({ message: `Request updated successfully` });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -198,6 +294,26 @@ router.get('/profile/:userId', async (req, res) => {
         const user = await User.findById(req.params.userId).select('-password');
         if (!user) return res.status(404).json({ message: 'User not found' });
         res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Upload Profile Picture
+router.post('/upload-profile/:userId', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+        
+        const user = await User.findByIdAndUpdate(
+            req.params.userId,
+            { profilePicture: req.file.path },
+            { new: true }
+        );
+        
+        res.json({ 
+            message: 'Profile picture updated', 
+            profilePicture: req.file.path 
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

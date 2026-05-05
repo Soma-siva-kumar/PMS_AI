@@ -35,6 +35,20 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    aiApiKey: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    aiSourceType: {
+        type: String,
+        enum: ['file', 'stream', 'mobile', 'cctv', 'none'],
+        default: 'none'
+    },
+    aiSourceUrl: {
+        type: String,
+        default: ''
+    },
     phoneNumber: {
         type: String,
         default: ''

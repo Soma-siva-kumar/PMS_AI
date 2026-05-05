@@ -41,14 +41,16 @@ const Sidebar = ({ user }) => {
 
     return (
         <>
-            {/* Mobile hamburger */}
-            <button
-                className="mobile-menu-btn"
-                onClick={() => setMobileOpen(!mobileOpen)}
-                aria-label="Toggle menu"
-            >
-                <i className={`fas ${mobileOpen ? 'fa-times' : 'fa-bars'}`}></i>
-            </button>
+            {/* Mobile hamburger - hidden on profile page */}
+            {location.pathname !== '/profile' && (
+                <button
+                    className="mobile-menu-btn"
+                    onClick={() => setMobileOpen(!mobileOpen)}
+                    aria-label="Toggle menu"
+                >
+                    <i className={`fas ${mobileOpen ? 'fa-times' : 'fa-bars'}`}></i>
+                </button>
+            )}
 
             <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
                 <div className="sidebar-brand">

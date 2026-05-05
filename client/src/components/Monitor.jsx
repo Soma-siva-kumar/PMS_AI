@@ -11,6 +11,7 @@ const Monitor = () => {
     const [isStreaming, setIsStreaming] = useState(false);
     const [showSrcInput, setShowSrcInput] = useState(false);
     const [customSrc, setCustomSrc] = useState('');
+    const [currentTime, setCurrentTime] = useState(new Date());
     const videoRef = useRef(null);
     const streamRef = useRef(null);
 
@@ -43,6 +44,14 @@ const Monitor = () => {
         return () => stopStream();
     }, []);
 
+    useEffect(() => {
+        let timer;
+        if (isStreaming) {
+            timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        }
+        return () => clearInterval(timer);
+    }, [isStreaming]);
+
     return (
         <div className="monitor-container">
             <header className="monitor-header">
@@ -72,9 +81,13 @@ const Monitor = () => {
                                     className="live-video-element"
                                     onError={() => addToast('Stream connection lost. Please check source URL.', 'error')}
                                 />
-                                <div className="stream-info-overlay">
+                                <div className="stream-info-overlay" style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap', background: 'rgba(0, 0, 0, 0.6)' }}>
                                     <span>TYPE: {source.toUpperCase()}</span>
                                     <span>SRC: {customSrc}</span>
+                                    <span style={{ marginLeft: 'auto', background: 'rgba(0,0,0,0.8)', padding: '5px 10px', borderRadius: '6px', color: '#fff', fontWeight: 'bold', border: '1px solid #ff4757', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span className="pulse-dot" style={{ background: '#ff4757', width: '8px', height: '8px' }}></span>
+                                        {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} &bull; {currentTime.toLocaleTimeString()}
+                                    </span>
                                 </div>
                             </div>
                         </div>

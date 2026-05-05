@@ -4,6 +4,7 @@ import axios from 'axios';
 import DashboardHeader from './DashboardHeader';
 import { SkeletonDashboard } from '../Skeleton';
 import { useToast } from '../Toast';
+import { BASE_URL } from '../../api';
 import './Dashboard.css';
 
 const PatientDashboard = () => {
@@ -33,7 +34,6 @@ const PatientDashboard = () => {
             }
 
             if (!user?.id) { setLoading(false); return; }
-            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             try {
                 const [caretakerRes, vitalRes] = await Promise.all([
                     axios.get(`${BASE_URL}/api/users/connections/${user.id}`),
@@ -72,7 +72,6 @@ const PatientDashboard = () => {
             return;
         }
 
-        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         try {
             const res = await axios.post(`${BASE_URL}/api/vitals/update`, newData);
             setVitals(res.data);
@@ -99,94 +98,71 @@ const PatientDashboard = () => {
                     <button className="emergency-btn pulse-red" onClick={handleEmergency}>
                         <i className="fas fa-bell"></i> EMERGENCY ALERT
                     </button>
-                    <button className="btn btn-outline btn-lg" onClick={simulateVitals}>
-                        <i className="fas fa-robot"></i> Simulate AI Supervision
-                    </button>
+
                 </div>
             </div>
 
-            <div className="dashboard-main-content animate-fade-in">
-                {/* AI Supervision Section */}
-                <div className="dashboard-section glass-panel animate-slide-up">
-                    <div className="section-title-group">
-                        <h3 className="section-title-alt">AI Supervision Status</h3>
-                        <p className="section-subtitle">Real-time supervision telemetry from Paryavekshan AI.</p>
+            <div className="dashboard-main-content animate-fade-in" style={{ marginTop: '20px' }}>
+                {/* Connect with Care Providers Card */}
+                <div className="dashboard-section glass-panel animate-slide-up" style={{ marginBottom: '25px' }}>
+                    <div className="section-title-group" style={{ marginBottom: '15px' }}>
+                        <h3 className="section-title-alt"><i className="fas fa-user-plus"></i> Connect with Care Providers</h3>
+                        <p className="section-subtitle">Search to add staff, caretakers, or family members.</p>
                     </div>
-                    <div className="vitals-grid" style={{ marginTop: '20px' }}>
-                        <div className="vital-card glass-panel">
-                            <div className="vital-header"><i className="fas fa-prescription-bottle-alt"></i> Saline Level</div>
-                            <div className="vital-value">{vitals.salineLevel} <span>%</span></div>
-                            <div className={`status-indicator ${salineStatus}`}>
-                                {vitals.salineLevel < 20 ? 'Critical' : 'Safe'}
-                            </div>
-                        </div>
-
-                        <div className="vital-card glass-panel">
-                            <div className="vital-header"><i className="fas fa-user-nurse"></i> Posture</div>
-                            <div className="vital-value" style={{fontSize: '1.8rem'}}>Stable</div>
-                            <div className="status-indicator success">Normal</div>
-                        </div>
-
-                        <div className="vital-card glass-panel">
-                            <div className="vital-header"><i className="fas fa-user-shield"></i> Security</div>
-                            <div className="vital-value" style={{fontSize: '1.8rem'}}>Authorized</div>
-                            <div className="status-indicator success">Secure</div>
-                        </div>
-
-                        <div className="vital-card glass-panel">
-                            <div className="vital-header"><i className="fas fa-sign-language"></i> Gesture</div>
-                            <div className="vital-value" style={{fontSize: '1.8rem'}}>None</div>
-                            <div className="status-indicator success">Clear</div>
-                        </div>
+                    <div className="search-action-container" style={{ marginTop: '10px' }}>
+                        <button 
+                            className="btn btn-primary" 
+                            style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                            onClick={() => navigate('/search')}
+                        >
+                            <i className="fas fa-user-plus"></i> Find Care Providers
+                        </button>
                     </div>
                 </div>
 
-                {/* Caretakers Section */}
-                <div className="dashboard-section glass-panel animate-slide-up" style={{ marginTop: '30px' }}>
-                    <div className="section-title-group">
-                        <h3 className="section-title-alt">My Caretakers</h3>
-                        <p className="section-subtitle">Search and connect with caretakers and supervisors.</p>
+                {/* My Care Team Card */}
+                <div className="dashboard-section glass-panel animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                    <div className="section-title-group" style={{ marginBottom: '15px' }}>
+                        <h3 className="section-title-alt"><i className="fas fa-users"></i> My Care Team</h3>
+                        <p className="section-subtitle">Manage your connected caretakers, family members, and staff.</p>
                     </div>
-                    <div className="dashboard-actions-row">
-                        <button className="dashboard-action-card glass-panel" onClick={() => navigate('/search')}>
-                            <i className="fas fa-stethoscope"></i>
-                            <div className="action-card-text">
-                                <strong>Connect with Caretakers</strong>
-                                <span>Find a supervisor to monitor your safety.</span>
-                            </div>
-                        </button>
+                    <div className="search-bar-container" style={{ position: 'relative', marginBottom: '20px' }}>
+                        <i className="fas fa-filter" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}></i>
+                        <input 
+                            type="text" 
+                            placeholder="Search connected people..." 
+                            style={{ width: '100%', padding: '10px 15px 10px 40px', borderRadius: '8px', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                        />
                     </div>
 
                     {caretakers.length > 0 ? (
-                        <div className="integrated-list-wrapper animate-fade-in" style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
-                            <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '15px' }}>Connected Providers</h4>
-                            <div className="caretaker-list chat-style-list">
-                                {caretakers.map(ct => (
-                                    <div key={ct._id || ct.id} className="chat-row glass-panel animate-slide-up" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                                        <div className="chat-avatar">
-                                            {ct.profilePicture ? <img src={ct.profilePicture} alt="Avatar" /> : <i className="fas fa-user-md"></i>}
+                        <div className="caretaker-list chat-style-list">
+                            {caretakers.map(ct => (
+                                <div key={ct._id || ct.id} className="chat-row glass-panel" style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '10px', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => navigate(`/dashboard/admin/user/${ct._id || ct.id}`)}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div className="chat-avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', overflow: 'hidden' }}>
+                                            {ct.profilePicture ? <img src={ct.profilePicture} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className="fas fa-user-md"></i>}
                                         </div>
                                         <div className="chat-info">
-                                            <div className="chat-name-row">
-                                                <strong>{ct.name}</strong>
-                                                <span className="chat-id">{ct.uniqueId}</span>
+                                            <div className="chat-name-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                                                <strong style={{ fontSize: '1rem' }}>{ct.name}</strong>
+                                                <span className="chat-id" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '8px' }}>{ct.uniqueId}</span>
                                             </div>
-                                            <p className="chat-subtitle">Verified Healthcare Provider</p>
-                                        </div>
-                                        <div className="chat-action">
-                                            <button className="icon-btn-sm tooltip" title="View Details">
-                                                <i className="fas fa-info-circle"></i>
-                                            </button>
+                                            <p className="chat-subtitle" style={{ margin: 0, fontSize: '0.8rem', color: 'var(--primary)' }}>{ct.role || 'Provider'}</p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="chat-action">
+                                        <button className="icon-btn-sm tooltip" onClick={() => navigate(`/dashboard/admin/user/${ct._id || ct.id}`)} title="View Details" style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-main)' }}>
+                                            <i className="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : (
-                        <div className="empty-state-compact animate-fade-in" style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
-                            <i className="fas fa-user-md"></i>
-                            <p>No caretakers connected yet.</p>
-                            <button className="btn btn-primary btn-sm" onClick={() => navigate('/search')}>Find Caretakers</button>
+                        <div className="empty-state-compact" style={{ textAlign: 'center', padding: '25px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px dashed var(--border)' }}>
+                            <i className="fas fa-user-friends" style={{ fontSize: '2rem', color: 'var(--text-muted)', opacity: 0.5, marginBottom: '10px' }}></i>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>No one is in your care team yet.</p>
                         </div>
                     )}
                 </div>

@@ -15,6 +15,9 @@ import AddStaff from './components/Dashboard/AddStaff';
 import AddPatient from './components/Dashboard/AddPatient';
 import UserDetail from './components/Dashboard/UserDetail';
 import SalineMonitor from './components/Dashboard/SalineMonitor';
+import PostureMonitor from './components/Dashboard/PostureMonitor';
+import GestureMonitor from './components/Dashboard/GestureMonitor';
+import UnknownPersonMonitor from './components/Dashboard/UnknownPersonMonitor';
 import Monitor from './components/Monitor';
 import Search from './components/Search';
 import Profile from './components/Profile';
@@ -54,6 +57,9 @@ const AppContent = () => {
                         <Route path="/dashboard/admin/add-patient" element={<AddPatient />} />
                         <Route path="/dashboard/admin/user/:id" element={<UserDetail />} />
                         <Route path="/monitor/:id/saline" element={<SalineMonitor />} />
+                        <Route path="/monitor/:id/posture" element={<PostureMonitor />} />
+                        <Route path="/monitor/:id/gestures" element={<GestureMonitor />} />
+                        <Route path="/monitor/:id/unknown" element={<UnknownPersonMonitor />} />
                         <Route path="/monitor/:id/:type" element={<Monitor />} />
                         <Route path="/monitor/:id" element={<Monitor />} />
                         <Route path="/search" element={<Search />} />

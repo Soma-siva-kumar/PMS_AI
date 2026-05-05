@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from './Toast';
+import { BASE_URL } from '../api';
 import './Auth.css';
 
 const Login = () => {
@@ -19,8 +20,8 @@ const Login = () => {
         setLoading(true);
         setError('');
         try {
-            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             const res = await axios.post(`${BASE_URL}/api/auth/login`, formData);
+
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
             

@@ -15,6 +15,18 @@ const connectionRequestSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'accepted', 'rejected'],
         default: 'pending'
+    },
+    initiatedByAdmin: {
+        type: Boolean,
+        default: false
+    },
+    acceptedBySender: {
+        type: Boolean,
+        default: false
+    },
+    acceptedByRecipient: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

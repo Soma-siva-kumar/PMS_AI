@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../Toast';
 import { SkeletonCard } from '../Skeleton';
+import { BASE_URL } from '../../api';
 import './Dashboard.css';
 
 const AddStaff = () => {
@@ -19,7 +20,6 @@ const AddStaff = () => {
         setLoading(true);
         setSearched(true);
         try {
-            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             // Fetch all staff (caretakers) from the system
             const res = await axios.get(`${BASE_URL}/api/users/caretakers`);
             
@@ -50,7 +50,6 @@ const AddStaff = () => {
 
     const handleAddToHospital = async (staffId) => {
         try {
-            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             await axios.put(`${BASE_URL}/api/users/profile/${staffId}`, {
                 hospitalName: user.hospitalName,
                 hospitalLocation: user.hospitalLocation,
@@ -68,10 +67,14 @@ const AddStaff = () => {
         <div className="dashboard-container">
             <header className="dashboard-header animate-fade-in">
                 <div className="user-brand">
-                    <h2 className="section-title">Add New Staff</h2>
+                    <div className="brand-title-area">
+                        <button onClick={() => navigate(-1)} className="back-btn-minimal" title="Back">
+                            <i className="fas fa-arrow-left"></i>
+                        </button>
+                        <h2 className="section-title">Add New Staff</h2>
+                    </div>
                     <p className="section-subtitle">Search the global staff directory to add members to your facility.</p>
                 </div>
-                <button onClick={() => navigate(-1)} className="btn btn-outline">Back to Console</button>
             </header>
 
             <form onSubmit={handleSearch} className="search-form glass-panel animate-fade-in">

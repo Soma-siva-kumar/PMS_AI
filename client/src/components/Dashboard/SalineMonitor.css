@@ -82,29 +82,45 @@
     align-items: center;
 }
 
-.bottle-cap {
-    width: 60px;
-    height: 20px;
-    background: #666;
-    border-radius: 4px;
-}
-
-.bottle-neck {
-    width: 40px;
-    height: 50px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+.iv-hanger {
+    width: 30px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.4);
     border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    margin-bottom: -5px;
+    z-index: 2;
 }
 
 .bottle-body {
-    width: 180px;
-    height: 300px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px 20px 60px 60px;
+    width: 220px;
+    height: 380px;
+    background: rgba(0, 210, 255, 0.05);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50px 50px 30px 30px;
     position: relative;
     overflow: hidden;
+    box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.15), 0 0 20px rgba(0, 210, 255, 0.1);
+    z-index: 1;
+}
+
+.iv-port {
+    width: 25px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    z-index: 2;
+}
+
+.iv-drip-chamber {
+    width: 12px;
+    height: 40px;
+    background: rgba(0, 210, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    margin-top: 2px;
 }
 
 .liquid-fill {
@@ -162,11 +178,24 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: 800;
     color: white;
     text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     z-index: 10;
+}
+
+@media (min-width: 1200px) {
+    .bottle-body {
+        width: 260px;
+        height: 460px;
+    }
+    .percentage-display {
+        font-size: 4rem;
+    }
+    .history-card {
+        min-height: 320px;
+    }
 }
 
 .vital-stats {
@@ -234,8 +263,28 @@
 .history-item {
     display: flex;
     justify-content: space-between;
-    padding: 10px;
-    border-bottom: 1px solid var(--border);
+    align-items: center;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(5px);
+    border-color: rgba(0, 210, 255, 0.3);
+}
+
+.history-item span {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.history-item strong {
+    font-size: 1.1rem;
+    color: var(--text-main);
 }
 
 .empty-hint {

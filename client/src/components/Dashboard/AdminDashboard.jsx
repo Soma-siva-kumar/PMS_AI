@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardHeader from './DashboardHeader';
 import { SkeletonDashboard } from '../Skeleton';
 import { useToast } from '../Toast';
+import { BASE_URL } from '../../api';
 import './Dashboard.css';
 
 const AdminDashboard = () => {
@@ -32,7 +33,6 @@ const AdminDashboard = () => {
                 return;
             }
             setLoading(true);
-            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             try {
                 let latestUser = user;
                 // Only fetch profile if we have a real user ID
@@ -75,7 +75,6 @@ const AdminDashboard = () => {
         fetchData();
 
         // Socket logic
-        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         socketRef.current = io(BASE_URL);
 
         socketRef.current.on('connect', () => {
@@ -123,9 +122,22 @@ const AdminDashboard = () => {
                         <div className="user-avatar-mini">
                             {u.profilePicture ? <img src={u.profilePicture} alt="Avatar" /> : <i className="fas fa-user-circle"></i>}
                         </div>
-                        <div className="user-details">
-                            <strong>{u.name}</strong>
-                            <span>{u.uniqueId} &bull; {u.email}</span>
+                        <div className="user-details" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                <strong>{u.name}</strong>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>ID: {u.uniqueId}</span>
+                                {type === 'patients' && (
+                                    (() => {
+                                        const pv = vitals[u._id];
+                                        const ts = pv ? new Date(pv.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Not yet';
+                                        return (
+                                            <span className="ai-last-updated" style={{ fontSize: '0.7rem', color: 'var(--primary)', background: 'var(--glass-bright)', padding: '3px 8px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '5px', border: '1px solid var(--border)' }}>
+                                                <i className="fas fa-clock"></i> Last Updated: {ts}
+                                            </span>
+                                        );
+                                    })()
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="row-action-indicator">

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './Toast';
 import { SkeletonCard } from './Skeleton';
+import { BASE_URL } from '../api';
 import './Dashboard/Dashboard.css';
 
 const Search = () => {
@@ -27,8 +28,8 @@ const Search = () => {
             if (isAdmin) {
                 // Admin can see everyone
                 const [ctRes, ptRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/users/caretakers'),
-                    axios.get('http://localhost:5000/api/users/patients')
+                    axios.get(`${BASE_URL}/api/users/caretakers`),
+                    axios.get(`${BASE_URL}/api/users/patients`)
                 ]);
                 
                 let combined = [...ctRes.data, ...ptRes.data];
@@ -49,10 +50,19 @@ const Search = () => {
                 setResults(combined);
                 if (combined.length === 0) setError('No hospital records found.');
             } else {
-                const searchRole = user?.role === 'Patient' ? 'Caretaker' : 'Patient';
-                const res = await axios.get(`http://localhost:5000/api/users/search?query=${query}&role=${searchRole}&currentUserId=${user.id}`);
+                let url = `${BASE_URL}/api/users/search?query=${query}&currentUserId=${user.id}`;
+                
+                if (user?.role === 'Patient') {
+                    // Patients can search for everyone EXCEPT other patients
+                    url += `&excludeRole=Patient`;
+                } else {
+                    // Staff/Caretakers/Family search for Patients
+                    url += `&role=Patient`;
+                }
+
+                const res = await axios.get(url);
                 setResults(res.data);
-                if (res.data.length === 0) setError('No users found with that ID or name.');
+                if (res.data.length === 0) setError('No matching care providers or patients found.');
             }
         } catch (err) {
             setError('Search failed. Please try again.');
@@ -68,7 +78,7 @@ const Search = () => {
 
     const handleConnect = async (targetId) => {
         try {
-            await axios.post('http://localhost:5000/api/users/connect', {
+            await axios.post(`${BASE_URL}/api/users/connect`, {
                 senderId: user.id,
                 recipientId: targetId
             });
@@ -85,7 +95,8 @@ const Search = () => {
                 <div className="user-brand">
                     <h2 className="section-title">{isAdmin ? 'Hospital Directory' : 'Connect & Supervise'}</h2>
                     <p className="section-subtitle">
-                        {isAdmin ? 'Search and manage all official staff and patients.' : `Connect with ${user?.role === 'Patient' ? 'Caretakers' : 'Patients'}.`}
+                        {isAdmin ? 'Search and manage all official staff and patients.' : 
+                         user?.role === 'Patient' ? 'Search for Staff, Caretakers, or Family Members.' : 'Search for Patients to supervise.'}
                     </p>
                 </div>
                 <button onClick={() => navigate(-1)} className="btn btn-outline">Back</button>
@@ -96,7 +107,8 @@ const Search = () => {
                     <i className="fas fa-search"></i>
                     <input
                         type="text"
-                        placeholder={isAdmin ? 'Search by name, ID, or role...' : (user?.role === 'Patient' ? 'Try searching "C1", "C2"...' : 'Try searching "P1", "P2"...')}
+                        placeholder={isAdmin ? 'Search by name, ID, or role...' : 
+                                     user?.role === 'Patient' ? 'Search by name, ID (e.g. S1, C1, F1)...' : 'Search patient by name or ID...'}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                     />
